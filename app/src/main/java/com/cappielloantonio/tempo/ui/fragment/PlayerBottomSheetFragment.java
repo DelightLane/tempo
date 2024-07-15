@@ -159,8 +159,8 @@ public class PlayerBottomSheetFragment extends Fragment {
             playerBottomSheetViewModel.setLiveArtist(getViewLifecycleOwner(), mediaMetadata.extras.getString("type"), mediaMetadata.extras.getString("artistId"));
             playerBottomSheetViewModel.setLiveDescription(mediaMetadata.extras.getString("description", null));
 
-            bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setText(MusicUtil.getReadableString(mediaMetadata.extras.getString("title")));
-            bind.playerHeaderLayout.playerHeaderMediaArtistLabel.setText(MusicUtil.getReadableString(mediaMetadata.extras.getString("artist")));
+            bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setText(mediaMetadata.extras.getString("title"));
+            bind.playerHeaderLayout.playerHeaderMediaArtistLabel.setText(mediaMetadata.extras.getString("artist"));
 
             CustomGlideRequest.Builder
                     .from(requireContext(), mediaMetadata.extras.getString("coverArtId"), CustomGlideRequest.ResourceType.Song)
@@ -247,6 +247,11 @@ public class PlayerBottomSheetFragment extends Fragment {
 
     public void goToQueuePage() {
         bind.playerBodyLayout.playerBodyBottomSheetViewPager.setCurrentItem(1, true);
+    }
+
+    public void setPlayerControllerVerticalPagerDraggableState(Boolean isDraggable) {
+        ViewPager2 playerControllerVerticalPager = (ViewPager2) bind.playerBodyLayout.playerBodyBottomSheetViewPager;
+        playerControllerVerticalPager.setUserInputEnabled(isDraggable);
     }
 
     private void defineProgressBarHandler(MediaBrowser mediaBrowser) {

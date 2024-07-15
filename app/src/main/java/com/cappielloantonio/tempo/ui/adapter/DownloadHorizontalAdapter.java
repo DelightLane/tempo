@@ -33,6 +33,7 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
     private String filterValue;
 
     private List<Child> songs;
+    private List<Child> shuffling;
     private List<Child> grouped;
 
     public DownloadHorizontalAdapter(ClickCallback click) {
@@ -82,12 +83,17 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
 
         this.songs = songs;
         this.grouped = groupSong(songs);
+        this.shuffling = shufflingSong(new ArrayList<>(songs));
 
         notifyDataSetChanged();
     }
 
     public Child getItem(int id) {
         return grouped.get(id);
+    }
+
+    public List<Child> getShuffling() {
+        return shuffling;
     }
 
     @Override
@@ -136,6 +142,27 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
         return songs;
     }
 
+    private List<Child> shufflingSong(List<Child> songs) {
+        if (filterValue == null) {
+            return songs;
+        }
+
+        switch (filterKey) {
+            case Constants.DOWNLOAD_TYPE_TRACK:
+                return songs.stream().filter(child -> child.getId().equals(filterValue)).collect(Collectors.toList());
+            case Constants.DOWNLOAD_TYPE_ALBUM:
+                return songs.stream().filter(child -> Objects.equals(child.getAlbumId(), filterValue)).collect(Collectors.toList());
+            case Constants.DOWNLOAD_TYPE_GENRE:
+                return songs.stream().filter(child -> Objects.equals(child.getGenre(), filterValue)).collect(Collectors.toList());
+            case Constants.DOWNLOAD_TYPE_YEAR:
+                return songs.stream().filter(child -> Objects.equals(child.getYear(), Integer.valueOf(filterValue))).collect(Collectors.toList());
+            case Constants.DOWNLOAD_TYPE_ARTIST:
+                return songs.stream().filter(child -> Objects.equals(child.getArtistId(), filterValue)).collect(Collectors.toList());
+            default:
+                return songs;
+        }
+    }
+
     private String countSong(String filterKey, String filterValue, List<Child> songs) {
         if (filterValue != null) {
             switch (filterKey) {
@@ -158,9 +185,17 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
     private void initTrackLayout(ViewHolder holder, int position) {
         Child song = grouped.get(position);
 
-        holder.item.downloadedItemTitleTextView.setText(MusicUtil.getReadableString(song.getTitle()));
-        holder.item.downloadedItemSubtitleTextView.setText(holder.itemView.getContext().getString(R.string.song_subtitle_formatter, MusicUtil.getReadableString(song.getArtist()), MusicUtil.getReadableDurationString(song.getDuration(), false)));
-        holder.item.downloadedItemPreTextView.setText(MusicUtil.getReadableString(song.getAlbum()));
+        holder.item.downloadedItemTitleTextView.setText(song.getTitle());
+        holder.item.downloadedItemSubtitleTextView.setText(
+                holder.itemView.getContext().getString(
+                        R.string.song_subtitle_formatter,
+                        song.getArtist(),
+                        MusicUtil.getReadableDurationString(song.getDuration(), false),
+                        ""
+                )
+        );
+
+        holder.item.downloadedItemPreTextView.setText(song.getAlbum());
 
         CustomGlideRequest.Builder
                 .from(holder.itemView.getContext(), song.getCoverArtId(), CustomGlideRequest.ResourceType.Song)
@@ -181,9 +216,9 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
     private void initAlbumLayout(ViewHolder holder, int position) {
         Child song = grouped.get(position);
 
-        holder.item.downloadedItemTitleTextView.setText(MusicUtil.getReadableString(song.getAlbum()));
+        holder.item.downloadedItemTitleTextView.setText(song.getAlbum());
         holder.item.downloadedItemSubtitleTextView.setText(holder.itemView.getContext().getString(R.string.download_item_single_subtitle_formatter, countSong(Constants.DOWNLOAD_TYPE_ALBUM, song.getAlbumId(), songs)));
-        holder.item.downloadedItemPreTextView.setText(MusicUtil.getReadableString(song.getArtist()));
+        holder.item.downloadedItemPreTextView.setText(song.getArtist());
 
         CustomGlideRequest.Builder
                 .from(holder.itemView.getContext(), song.getCoverArtId(), CustomGlideRequest.ResourceType.Song)
@@ -204,7 +239,7 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
     private void initArtistLayout(ViewHolder holder, int position) {
         Child song = grouped.get(position);
 
-        holder.item.downloadedItemTitleTextView.setText(MusicUtil.getReadableString(song.getArtist()));
+        holder.item.downloadedItemTitleTextView.setText(song.getArtist());
         holder.item.downloadedItemSubtitleTextView.setText(holder.itemView.getContext().getString(R.string.download_item_single_subtitle_formatter, countSong(Constants.DOWNLOAD_TYPE_ARTIST, song.getArtistId(), songs)));
 
         CustomGlideRequest.Builder
@@ -220,7 +255,7 @@ public class DownloadHorizontalAdapter extends RecyclerView.Adapter<DownloadHori
     private void initGenreLayout(ViewHolder holder, int position) {
         Child song = grouped.get(position);
 
-        holder.item.downloadedItemTitleTextView.setText(MusicUtil.getReadableString(song.getGenre()));
+        holder.item.downloadedItemTitleTextView.setText(song.getGenre());
         holder.item.downloadedItemSubtitleTextView.setText(holder.itemView.getContext().getString(R.string.download_item_single_subtitle_formatter, countSong(Constants.DOWNLOAD_TYPE_GENRE, song.getGenre(), songs)));
 
         holder.item.itemCoverImageView.setVisibility(View.GONE);

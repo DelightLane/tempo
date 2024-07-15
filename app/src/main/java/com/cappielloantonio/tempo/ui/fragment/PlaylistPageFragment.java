@@ -60,6 +60,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.playlist_page_menu, menu);
+        initMenuOption(menu);
     }
 
     @Override
@@ -115,6 +116,12 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
                 }
             });
             return true;
+        } else if (item.getItemId() == R.id.action_pin_playlist) {
+            playlistPageViewModel.setPinned(true);
+            return true;
+        } else if (item.getItemId() == R.id.action_unpin_playlist) {
+            playlistPageViewModel.setPinned(false);
+            return true;
         }
 
         return false;
@@ -122,6 +129,13 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
 
     private void init() {
         playlistPageViewModel.setPlaylist(requireArguments().getParcelable(Constants.PLAYLIST_OBJECT));
+    }
+
+    private void initMenuOption(Menu menu) {
+        playlistPageViewModel.isPinned(getViewLifecycleOwner()).observe(getViewLifecycleOwner(), isPinned -> {
+            menu.findItem(R.id.action_unpin_playlist).setVisible(isPinned);
+            menu.findItem(R.id.action_pin_playlist).setVisible(!isPinned);
+        });
     }
 
     private void initAppBar() {
@@ -132,9 +146,9 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
             activity.getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
 
-        bind.animToolbar.setTitle(MusicUtil.getReadableString(playlistPageViewModel.getPlaylist().getName()));
+        bind.animToolbar.setTitle(playlistPageViewModel.getPlaylist().getName());
 
-        bind.playlistNameLabel.setText(MusicUtil.getReadableString(playlistPageViewModel.getPlaylist().getName()));
+        bind.playlistNameLabel.setText(playlistPageViewModel.getPlaylist().getName());
         bind.playlistSongCountLabel.setText(getString(R.string.playlist_song_count, playlistPageViewModel.getPlaylist().getSongCount()));
         bind.playlistDurationLabel.setText(getString(R.string.playlist_duration, MusicUtil.getReadableDurationString(playlistPageViewModel.getPlaylist().getDuration(), false)));
 
@@ -167,7 +181,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
 
                 // Pic top-left
                 CustomGlideRequest.Builder
-                        .from(requireContext(), songs.size() > 0 ? songs.get(0).getCoverArtId() : playlistPageViewModel.getPlaylist().getCoverArtId(), CustomGlideRequest.ResourceType.Song)
+                        .from(requireContext(), !songs.isEmpty() ? songs.get(0).getCoverArtId() : playlistPageViewModel.getPlaylist().getCoverArtId(), CustomGlideRequest.ResourceType.Song)
                         .build()
                         .transform(new GranularRoundedCorners(CustomGlideRequest.CORNER_RADIUS, 0, 0, 0))
                         .into(bind.playlistCoverImageViewTopLeft);
@@ -200,7 +214,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
         bind.songRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         bind.songRecyclerView.setHasFixedSize(true);
 
-        songHorizontalAdapter = new SongHorizontalAdapter(this, true, false);
+        songHorizontalAdapter = new SongHorizontalAdapter(this, true, false, null);
         bind.songRecyclerView.setAdapter(songHorizontalAdapter);
 
         playlistPageViewModel.getPlaylistSongLiveList().observe(getViewLifecycleOwner(), songs -> songHorizontalAdapter.setItems(songs));

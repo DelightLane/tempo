@@ -3,6 +3,8 @@ package com.cappielloantonio.tempo.ui.dialog;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
@@ -28,6 +30,7 @@ public class ServerSignupDialog extends DialogFragment {
     private String username;
     private String password;
     private String server;
+    private String localAddress;
     private boolean lowSecurity = false;
 
     @NonNull
@@ -69,6 +72,7 @@ public class ServerSignupDialog extends DialogFragment {
                 bind.usernameTextView.setText(loginViewModel.getServerToEdit().getUsername());
                 bind.passwordTextView.setText("");
                 bind.serverTextView.setText(loginViewModel.getServerToEdit().getAddress());
+                bind.localAddressTextView.setText(loginViewModel.getServerToEdit().getLocalAddress());
                 bind.lowSecurityCheckbox.setChecked(loginViewModel.getServerToEdit().isLowSecurity());
             }
         } else {
@@ -86,9 +90,12 @@ public class ServerSignupDialog extends DialogFragment {
             }
         });
 
-        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> Toast.makeText(requireContext(), R.string.server_signup_dialog_action_delete_toast, Toast.LENGTH_SHORT).show());
+
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnLongClickListener(v -> {
             loginViewModel.deleteServer(null);
             Objects.requireNonNull(getDialog()).dismiss();
+            return true;
         });
     }
 
@@ -97,6 +104,7 @@ public class ServerSignupDialog extends DialogFragment {
         username = Objects.requireNonNull(bind.usernameTextView.getText()).toString().trim();
         password = bind.lowSecurityCheckbox.isChecked() ? MusicUtil.passwordHexEncoding(Objects.requireNonNull(bind.passwordTextView.getText()).toString()) : Objects.requireNonNull(bind.passwordTextView.getText()).toString();
         server = Objects.requireNonNull(bind.serverTextView.getText()).toString().trim();
+        localAddress = Objects.requireNonNull(bind.localAddressTextView.getText()).toString().trim();
         lowSecurity = bind.lowSecurityCheckbox.isChecked();
 
         if (TextUtils.isEmpty(serverName)) {
@@ -114,6 +122,11 @@ public class ServerSignupDialog extends DialogFragment {
             return false;
         }
 
+        if (!TextUtils.isEmpty(localAddress) && !localAddress.matches("^https?://(.*)")) {
+            bind.localAddressTextView.setError(getString(R.string.error_server_prefix));
+            return false;
+        }
+
         if (!server.matches("^https?://(.*)")) {
             bind.serverTextView.setError(getString(R.string.error_server_prefix));
             return false;
@@ -124,6 +137,6 @@ public class ServerSignupDialog extends DialogFragment {
 
     private void saveServerPreference() {
         String serverID = loginViewModel.getServerToEdit() != null ? loginViewModel.getServerToEdit().getServerId() : UUID.randomUUID().toString();
-        loginViewModel.addServer(new Server(serverID, this.serverName, this.username, this.password, this.server, System.currentTimeMillis(), this.lowSecurity));
+        loginViewModel.addServer(new Server(serverID, this.serverName, this.username, this.password, this.server, this.localAddress, System.currentTimeMillis(), this.lowSecurity));
     }
 }

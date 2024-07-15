@@ -1,6 +1,8 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -45,9 +47,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     private FragmentAlbumPageBinding bind;
     private MainActivity activity;
     private AlbumPageViewModel albumPageViewModel;
-
     private SongHorizontalAdapter songHorizontalAdapter;
-
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
     @Override
@@ -73,6 +73,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
         init();
         initAppBar();
         initAlbumInfoTextButton();
+        initAlbumNotes();
         initMusicButton();
         initBackCover();
         initSongsView();
@@ -103,10 +104,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_download_album) {
             albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> {
-                DownloadUtil.getDownloadTracker(requireContext()).download(
-                        MappingUtil.mapDownloads(songs),
-                        songs.stream().map(Download::new).collect(Collectors.toList())
-                );
+                DownloadUtil.getDownloadTracker(requireContext()).download(MappingUtil.mapDownloads(songs), songs.stream().map(Download::new).collect(Collectors.toList()));
             });
             return true;
         }
@@ -115,7 +113,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        albumPageViewModel.setAlbum(requireArguments().getParcelable(Constants.ALBUM_OBJECT));
+        albumPageViewModel.setAlbum(getViewLifecycleOwner(), requireArguments().getParcelable(Constants.ALBUM_OBJECT));
     }
 
     private void initAppBar() {
@@ -124,17 +122,48 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
         if (activity.getSupportActionBar() != null) {
             activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             activity.getSupportActionBar().setDisplayShowHomeEnabled(true);
+
         }
 
-        bind.animToolbar.setTitle(MusicUtil.getReadableString(albumPageViewModel.getAlbum().getName()));
+        albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
+            if (bind != null && album != null) {
+                bind.animToolbar.setTitle(album.getName());
 
-        bind.albumNameLabel.setText(MusicUtil.getReadableString(albumPageViewModel.getAlbum().getName()));
-        bind.albumArtistLabel.setText(MusicUtil.getReadableString(albumPageViewModel.getAlbum().getArtist()));
-        bind.albumReleaseYearLabel.setText(albumPageViewModel.getAlbum().getYear() != 0 ? String.valueOf(albumPageViewModel.getAlbum().getYear()) : "");
+                bind.albumNameLabel.setText(album.getName());
+                bind.albumArtistLabel.setText(album.getArtist());
+                bind.albumReleaseYearLabel.setText(album.getYear() != 0 ? String.valueOf(album.getYear()) : "");
+                bind.albumSongCountDurationTextview.setText(getString(R.string.album_page_tracks_count_and_duration, album.getSongCount(), album.getDuration() != null ? album.getDuration() / 60 : 0));
+                bind.albumGenresTextview.setText(album.getGenre());
+
+                if (album.getReleaseDate() != null && album.getOriginalReleaseDate() != null) {
+                    bind.albumReleaseYearsTextview.setVisibility(View.VISIBLE);
+
+                    if (album.getReleaseDate() == null || album.getOriginalReleaseDate() == null) {
+                        bind.albumReleaseYearsTextview.setText(getString(R.string.album_page_release_date_label, album.getReleaseDate() != null ? album.getReleaseDate().getFormattedDate() : album.getOriginalReleaseDate().getFormattedDate()));
+                    }
+
+                    if (album.getReleaseDate() != null && album.getOriginalReleaseDate() != null) {
+                        if (Objects.equals(album.getReleaseDate().getYear(), album.getOriginalReleaseDate().getYear()) && Objects.equals(album.getReleaseDate().getMonth(), album.getOriginalReleaseDate().getMonth()) && Objects.equals(album.getReleaseDate().getDay(), album.getOriginalReleaseDate().getDay())) {
+                            bind.albumReleaseYearsTextview.setText(getString(R.string.album_page_release_date_label, album.getReleaseDate().getFormattedDate()));
+                        } else {
+                            bind.albumReleaseYearsTextview.setText(getString(R.string.album_page_release_dates_label, album.getReleaseDate().getFormattedDate(), album.getOriginalReleaseDate().getFormattedDate()));
+                        }
+                    }
+                }
+            }
+        });
 
         bind.animToolbar.setNavigationOnClickListener(v -> activity.navController.navigateUp());
 
         Objects.requireNonNull(bind.animToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));
+
+        bind.albumOtherInfoButton.setOnClickListener(v -> {
+            if (bind.albumDetailView.getVisibility() == View.GONE) {
+                bind.albumDetailView.setVisibility(View.VISIBLE);
+            } else if (bind.albumDetailView.getVisibility() == View.VISIBLE) {
+                bind.albumDetailView.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void initAlbumInfoTextButton() {
@@ -146,6 +175,26 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
             } else
                 Toast.makeText(requireContext(), getString(R.string.album_error_retrieving_artist), Toast.LENGTH_SHORT).show();
         }));
+    }
+
+    private void initAlbumNotes() {
+        albumPageViewModel.getAlbumInfo().observe(getViewLifecycleOwner(), albumInfo -> {
+            if (albumInfo != null) {
+                if (bind != null) bind.albumNotesTextview.setVisibility(View.VISIBLE);
+                if (bind != null)
+                    bind.albumNotesTextview.setText(MusicUtil.getReadableString(albumInfo.getNotes()));
+
+                if (bind != null && albumInfo.getLastFmUrl() != null && !albumInfo.getLastFmUrl().isEmpty()) {
+                    bind.albumNotesTextview.setOnClickListener(v -> {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse(albumInfo.getLastFmUrl()));
+                        startActivity(intent);
+                    });
+                }
+            } else {
+                if (bind != null) bind.albumNotesTextview.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void initMusicButton() {
@@ -171,20 +220,25 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     }
 
     private void initBackCover() {
-        CustomGlideRequest.Builder
-                .from(requireContext(), albumPageViewModel.getAlbum().getCoverArtId(), CustomGlideRequest.ResourceType.Album)
-                .build()
-                .into(bind.albumCoverImageView);
+        albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
+            if (bind != null && album != null) {
+                CustomGlideRequest.Builder.from(requireContext(), album.getCoverArtId(), CustomGlideRequest.ResourceType.Album).build().into(bind.albumCoverImageView);
+            }
+        });
     }
 
     private void initSongsView() {
-        bind.songRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        bind.songRecyclerView.setHasFixedSize(true);
+        albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
+            if (bind != null && album != null) {
+                bind.songRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+                bind.songRecyclerView.setHasFixedSize(true);
 
-        songHorizontalAdapter = new SongHorizontalAdapter(this, false, false);
-        bind.songRecyclerView.setAdapter(songHorizontalAdapter);
+                songHorizontalAdapter = new SongHorizontalAdapter(this, false, false, album);
+                bind.songRecyclerView.setAdapter(songHorizontalAdapter);
 
-        albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> songHorizontalAdapter.setItems(songs));
+                albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> songHorizontalAdapter.setItems(songs));
+            }
+        });
     }
 
     private void initializeMediaBrowser() {

@@ -6,6 +6,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -18,12 +19,16 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import com.cappielloantonio.tempo.App;
+import com.cappielloantonio.tempo.BuildConfig;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.broadcast.receiver.ConnectivityStatusBroadcastReceiver;
 import com.cappielloantonio.tempo.databinding.ActivityMainBinding;
+import com.cappielloantonio.tempo.github.utils.UpdateUtil;
 import com.cappielloantonio.tempo.service.MediaManager;
 import com.cappielloantonio.tempo.ui.activity.base.BaseActivity;
 import com.cappielloantonio.tempo.ui.dialog.ConnectionAlertDialog;
+import com.cappielloantonio.tempo.ui.dialog.GithubTempoUpdateDialog;
 import com.cappielloantonio.tempo.ui.dialog.ServerUnreachableDialog;
 import com.cappielloantonio.tempo.ui.fragment.PlayerBottomSheetFragment;
 import com.cappielloantonio.tempo.util.Constants;
@@ -39,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 
 @UnstableApi
 public class MainActivity extends BaseActivity {
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "MainActivityLogs";
 
     public ActivityMainBinding bind;
     private MainViewModel mainViewModel;
@@ -70,6 +75,8 @@ public class MainActivity extends BaseActivity {
 
         init();
         checkConnectionType();
+        getOpenSubsonicExtensions();
+        checkTempoUpdate();
     }
 
     @Override
@@ -300,10 +307,11 @@ public class MainActivity extends BaseActivity {
         Preferences.setToken(null);
         Preferences.setPassword(null);
         Preferences.setServer(null);
+        Preferences.setLocalAddress(null);
         Preferences.setUser(null);
 
         // TODO Enter all settings to be reset
-        Preferences.setServerId(null);
+        Preferences.setOpenSubsonic(false);
         Preferences.setPlaybackSpeed(Constants.MEDIA_PLAYBACK_SPEED_100);
         Preferences.setSkipSilenceMode(false);
         Preferences.setDataSavingMode(false);
@@ -333,10 +341,55 @@ public class MainActivity extends BaseActivity {
     }
 
     private void pingServer() {
+        if (Preferences.getToken() == null) return;
+
+        if (Preferences.isInUseServerAddressLocal()) {
+            mainViewModel.ping().observe(this, subsonicResponse -> {
+                if (subsonicResponse == null) {
+                    Preferences.setServerSwitchableTimer();
+                    Preferences.switchInUseServerAddress();
+                    App.refreshSubsonicClient();
+                    pingServer();
+                } else {
+                    Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
+                }
+            });
+        } else {
+            if (Preferences.isServerSwitchable()) {
+                Preferences.setServerSwitchableTimer();
+                Preferences.switchInUseServerAddress();
+                App.refreshSubsonicClient();
+                pingServer();
+            } else {
+                mainViewModel.ping().observe(this, subsonicResponse -> {
+                    if (subsonicResponse == null) {
+                        if (Preferences.showServerUnreachableDialog()) {
+                            ServerUnreachableDialog dialog = new ServerUnreachableDialog();
+                            dialog.show(getSupportFragmentManager(), null);
+                        }
+                    } else {
+                        Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
+                    }
+                });
+            }
+        }
+    }
+
+    private void getOpenSubsonicExtensions() {
         if (Preferences.getToken() != null) {
-            mainViewModel.ping().observe(this, isPingSuccessfull -> {
-                if (!isPingSuccessfull && Preferences.showServerUnreachableDialog()) {
-                    ServerUnreachableDialog dialog = new ServerUnreachableDialog();
+            mainViewModel.getOpenSubsonicExtensions().observe(this, openSubsonicExtensions -> {
+                if (openSubsonicExtensions != null) {
+                    Preferences.setOpenSubsonicExtensions(openSubsonicExtensions);
+                }
+            });
+        }
+    }
+
+    private void checkTempoUpdate() {
+        if (BuildConfig.FLAVOR.equals("tempo") && Preferences.showTempoUpdateDialog()) {
+            mainViewModel.checkTempoUpdate().observe(this, latestRelease -> {
+                if (latestRelease != null && UpdateUtil.showUpdateDialog(latestRelease)) {
+                    GithubTempoUpdateDialog dialog = new GithubTempoUpdateDialog(latestRelease);
                     dialog.show(getSupportFragmentManager(), null);
                 }
             });

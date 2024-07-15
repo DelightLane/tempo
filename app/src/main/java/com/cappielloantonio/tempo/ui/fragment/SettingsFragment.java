@@ -3,9 +3,11 @@ package com.cappielloantonio.tempo.ui.fragment;
 import android.content.Intent;
 import android.media.audiofx.AudioEffect;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -29,6 +31,8 @@ import com.cappielloantonio.tempo.ui.activity.MainActivity;
 import com.cappielloantonio.tempo.ui.dialog.DeleteDownloadStorageDialog;
 import com.cappielloantonio.tempo.ui.dialog.DownloadStorageDialog;
 import com.cappielloantonio.tempo.ui.dialog.StarredSyncDialog;
+import com.cappielloantonio.tempo.ui.dialog.StreamingCacheStorageDialog;
+import com.cappielloantonio.tempo.util.DownloadUtil;
 import com.cappielloantonio.tempo.util.Preferences;
 import com.cappielloantonio.tempo.util.UIUtil;
 import com.cappielloantonio.tempo.viewmodel.SettingViewModel;
@@ -81,16 +85,20 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         super.onResume();
 
         checkEqualizer();
+        checkCacheStorage();
         checkStorage();
 
+        setStreamingCacheSize();
         setAppLanguage();
         setVersion();
 
         actionLogout();
         actionScan();
         actionSyncStarredTracks();
+        actionChangeStreamingCacheStorage();
         actionChangeDownloadStorage();
         actionDeleteDownloadStorage();
+        actionKeepScreenOn();
     }
 
     @Override
@@ -130,6 +138,22 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         }
     }
 
+    private void checkCacheStorage() {
+        Preference storage = findPreference("streaming_cache_storage");
+
+        if (storage == null) return;
+
+        try {
+            if (requireContext().getExternalFilesDirs(null)[1] == null) {
+                storage.setVisible(false);
+            } else {
+                storage.setSummary(Preferences.getDownloadStoragePreference() == 0 ? R.string.download_storage_internal_dialog_negative_button : R.string.download_storage_external_dialog_positive_button);
+            }
+        } catch (Exception exception) {
+            storage.setVisible(false);
+        }
+    }
+
     private void checkStorage() {
         Preference storage = findPreference("download_storage");
 
@@ -143,6 +167,26 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             }
         } catch (Exception exception) {
             storage.setVisible(false);
+        }
+    }
+
+    private void setStreamingCacheSize() {
+        ListPreference streamingCachePreference = findPreference("streaming_cache_size");
+
+        if (streamingCachePreference != null) {
+            streamingCachePreference.setSummaryProvider(new Preference.SummaryProvider<ListPreference>() {
+                @Nullable
+                @Override
+                public CharSequence provideSummary(@NonNull ListPreference preference) {
+                    CharSequence entry = preference.getEntry();
+
+                    if (entry == null) return null;
+
+                    long currentSizeMb = DownloadUtil.getStreamingCacheSize(requireActivity()) / (1024 * 1024);
+
+                    return getString(R.string.settings_summary_streaming_cache_size, entry, String.valueOf(currentSizeMb));
+                }
+            });
         }
     }
 
@@ -188,7 +232,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
                 @Override
                 public void onSuccess(boolean isScanning, long count) {
-                    getScanStatus();
+                    findPreference("scan_library").setSummary("Scanning: counting " + count + " tracks");
+                    if (isScanning) getScanStatus();
                 }
             });
 
@@ -204,6 +249,24 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                     dialog.show(activity.getSupportFragmentManager(), null);
                 }
             }
+            return true;
+        });
+    }
+
+    private void actionChangeStreamingCacheStorage() {
+        findPreference("streaming_cache_storage").setOnPreferenceClickListener(preference -> {
+            StreamingCacheStorageDialog dialog = new StreamingCacheStorageDialog(new DialogClickCallback() {
+                @Override
+                public void onPositiveClick() {
+                    findPreference("streaming_cache_storage").setSummary(R.string.streaming_cache_storage_external_dialog_positive_button);
+                }
+
+                @Override
+                public void onNegativeClick() {
+                    findPreference("streaming_cache_storage").setSummary(R.string.streaming_cache_storage_internal_dialog_negative_button);
+                }
+            });
+            dialog.show(activity.getSupportFragmentManager(), null);
             return true;
         });
     }
@@ -246,6 +309,19 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 findPreference("scan_library").setSummary("Scanning: counting " + count + " tracks");
                 if (isScanning) getScanStatus();
             }
+        });
+    }
+
+    private void actionKeepScreenOn() {
+        findPreference("always_on_display").setOnPreferenceChangeListener((preference, newValue) -> {
+            if (newValue instanceof Boolean) {
+                if ((Boolean) newValue) {
+                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                } else {
+                    activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+            }
+            return true;
         });
     }
 }

@@ -74,14 +74,16 @@ public class MappingUtil {
                 .setMediaId(media.getId())
                 .setMediaMetadata(
                         new MediaMetadata.Builder()
-                                .setTitle(MusicUtil.getReadableString(media.getTitle()))
+                                .setTitle(media.getTitle())
                                 .setTrackNumber(media.getTrack() != null ? media.getTrack() : 0)
                                 .setDiscNumber(media.getDiscNumber() != null ? media.getDiscNumber() : 0)
                                 .setReleaseYear(media.getYear() != null ? media.getYear() : 0)
-                                .setAlbumTitle(MusicUtil.getReadableString(media.getAlbum()))
-                                .setArtist(MusicUtil.getReadableString(media.getArtist()))
+                                .setAlbumTitle(media.getAlbum())
+                                .setArtist(media.getArtist())
                                 .setArtworkUri(artworkUri)
                                 .setExtras(bundle)
+                                .setIsBrowsable(false)
+                                .setIsPlayable(true)
                                 .build()
                 )
                 .setRequestMetadata(
@@ -110,12 +112,14 @@ public class MappingUtil {
                 .setMediaId(media.getId())
                 .setMediaMetadata(
                         new MediaMetadata.Builder()
-                                .setTitle(MusicUtil.getReadableString(media.getTitle()))
+                                .setTitle(media.getTitle())
                                 .setTrackNumber(media.getTrack() != null ? media.getTrack() : 0)
                                 .setDiscNumber(media.getDiscNumber() != null ? media.getDiscNumber() : 0)
                                 .setReleaseYear(media.getYear() != null ? media.getYear() : 0)
-                                .setAlbumTitle(MusicUtil.getReadableString(media.getAlbum()))
-                                .setArtist(MusicUtil.getReadableString(media.getArtist()))
+                                .setAlbumTitle(media.getAlbum())
+                                .setArtist(media.getArtist())
+                                .setIsBrowsable(false)
+                                .setIsPlayable(true)
                                 .build()
                 )
                 .setRequestMetadata(
@@ -145,6 +149,8 @@ public class MappingUtil {
                                 .setTitle(internetRadioStation.getName())
                                 .setArtist(internetRadioStation.getStreamUrl())
                                 .setExtras(bundle)
+                                .setIsBrowsable(false)
+                                .setIsPlayable(true)
                                 .build()
                 )
                 .setRequestMetadata(
@@ -153,7 +159,7 @@ public class MappingUtil {
                                 .setExtras(bundle)
                                 .build()
                 )
-                .setMimeType(MimeTypes.BASE_TYPE_AUDIO)
+                // .setMimeType(MimeTypes.BASE_TYPE_AUDIO)
                 .setUri(uri)
                 .build();
     }
@@ -187,12 +193,14 @@ public class MappingUtil {
                 .setMediaId(podcastEpisode.getId())
                 .setMediaMetadata(
                         new MediaMetadata.Builder()
-                                .setTitle(MusicUtil.getReadableString(podcastEpisode.getTitle()))
+                                .setTitle(podcastEpisode.getTitle())
                                 .setReleaseYear(podcastEpisode.getYear() != null ? podcastEpisode.getYear() : 0)
-                                .setAlbumTitle(MusicUtil.getReadableString(podcastEpisode.getAlbum()))
-                                .setArtist(MusicUtil.getReadableString(podcastEpisode.getArtist()))
+                                .setAlbumTitle(podcastEpisode.getAlbum())
+                                .setArtist(podcastEpisode.getArtist())
                                 .setArtworkUri(artworkUri)
                                 .setExtras(bundle)
+                                .setIsBrowsable(false)
+                                .setIsPlayable(true)
                                 .build()
                 )
                 .setRequestMetadata(
@@ -201,12 +209,6 @@ public class MappingUtil {
                                 .setExtras(bundle)
                                 .build()
                 )
-                /* .setClippingConfiguration(
-                        new MediaItem.ClippingConfiguration.Builder()
-                                .setStartPositionMs(0)
-                                .setEndPositionMs(podcastEpisode.getDuration() * 1000)
-                                .build()
-                ) */
                 .setMimeType(MimeTypes.BASE_TYPE_AUDIO)
                 .setUri(uri)
                 .build();

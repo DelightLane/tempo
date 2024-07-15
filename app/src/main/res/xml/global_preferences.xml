@@ -32,6 +32,11 @@
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreference
+            android:title="@string/settings_always_on_display"
+            android:defaultValue="false"
+            android:key="always_on_display" />
+
+        <SwitchPreference
             android:title="@string/settings_rounded_corner"
             android:defaultValue="true"
             android:summary="@string/settings_rounded_corner_summary"
@@ -45,6 +50,18 @@
             app:key="rounded_corner_size"
             app:title="@string/settings_rounded_corner_size"
             app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            android:title="@string/settings_audio_quality"
+            android:defaultValue="false"
+            android:summary="@string/settings_audio_quality_summary"
+            android:key="audio_quality_per_item" />
+
+        <SwitchPreference
+            android:title="@string/settings_item_rating"
+            android:defaultValue="false"
+            android:summary="@string/settings_item_rating_summary"
+            android:key="rating_per_item" />
 
         <SwitchPreference
             android:title="@string/settings_podcast"
@@ -67,6 +84,14 @@
 
     <PreferenceCategory app:title="@string/settings_title_data">
         <ListPreference
+            app:defaultValue="256"
+            app:dialogTitle="@string/settings_streaming_cache_size"
+            app:entries="@array/streaming_cache_size_titles"
+            app:entryValues="@array/streaming_cache_size_values"
+            app:key="streaming_cache_size"
+            app:title="@string/settings_streaming_cache_size" />
+
+        <ListPreference
             app:defaultValue="500"
             app:dialogTitle="@string/settings_covers_cache"
             app:entries="@array/pref_cache_size_titles"
@@ -83,6 +108,12 @@
             app:key="image_size"
             app:title="@string/settings_image_size"
             app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            android:title="@string/settings_continuous_play_title"
+            android:defaultValue="true"
+            android:summary="@string/settings_continuous_play_summary"
+            android:key="continuous_play" />
 
         <SwitchPreference
             android:title="@string/settings_wifi_only_title"
@@ -111,6 +142,10 @@
             app:title="@string/settings_buffering_strategy"
             app:summary="@string/settings_buffering_strategy_summary"
             app:useSimpleSummaryProvider="false" />
+
+        <Preference
+            android:key="streaming_cache_storage"
+            app:title="@string/settings_streaming_cache_storage_title" />
 
         <Preference
             android:key="download_storage"

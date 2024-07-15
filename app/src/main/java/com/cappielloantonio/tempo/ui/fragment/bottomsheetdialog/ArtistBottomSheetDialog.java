@@ -75,7 +75,7 @@ public class ArtistBottomSheetDialog extends BottomSheetDialogFragment implement
                 .into(coverArtist);
 
         TextView nameArtist = view.findViewById(R.id.song_title_text_view);
-        nameArtist.setText(MusicUtil.getReadableString(artistBottomSheetViewModel.getArtist().getName()));
+        nameArtist.setText(artistBottomSheetViewModel.getArtist().getName());
         nameArtist.setSelected(true);
 
         ToggleButton favoriteToggle = view.findViewById(R.id.button_favorite);
@@ -91,7 +91,7 @@ public class ArtistBottomSheetDialog extends BottomSheetDialogFragment implement
             artistRepository.getInstantMix(artist, 20).observe(getViewLifecycleOwner(), songs -> {
                 MusicUtil.ratingFilter(songs);
 
-                if (songs.size() > 0) {
+                if (!songs.isEmpty()) {
                     MediaManager.startQueue(mediaBrowserListenableFuture, songs, 0);
                     ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
                 }
@@ -106,7 +106,7 @@ public class ArtistBottomSheetDialog extends BottomSheetDialogFragment implement
             artistRepository.getRandomSong(artist, 50).observe(getViewLifecycleOwner(), songs -> {
                 MusicUtil.ratingFilter(songs);
 
-                if (songs.size() > 0) {
+                if (!songs.isEmpty()) {
                     MediaManager.startQueue(mediaBrowserListenableFuture, songs, 0);
                     ((MainActivity) requireActivity()).setBottomSheetInPeek(true);
 

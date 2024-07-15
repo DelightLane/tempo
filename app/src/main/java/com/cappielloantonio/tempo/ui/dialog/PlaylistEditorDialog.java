@@ -7,6 +7,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
@@ -31,7 +32,8 @@ import java.util.Objects;
 public class PlaylistEditorDialog extends DialogFragment {
     private DialogPlaylistEditorBinding bind;
     private PlaylistEditorViewModel playlistEditorViewModel;
-    private PlaylistCallback playlistCallback;
+
+    private final PlaylistCallback playlistCallback;
 
     private String playlistName;
     private PlaylistDialogSongHorizontalAdapter playlistDialogSongHorizontalAdapter;
@@ -80,7 +82,7 @@ public class PlaylistEditorDialog extends DialogFragment {
             playlistEditorViewModel.setPlaylistToEdit(requireArguments().getParcelable(Constants.PLAYLIST_OBJECT));
 
             if (playlistEditorViewModel.getPlaylistToEdit() != null) {
-                bind.playlistNameTextView.setText(MusicUtil.getReadableString(playlistEditorViewModel.getPlaylistToEdit().getName()));
+                bind.playlistNameTextView.setText(playlistEditorViewModel.getPlaylistToEdit().getName());
             }
         }
     }
@@ -100,9 +102,12 @@ public class PlaylistEditorDialog extends DialogFragment {
             }
         });
 
-        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> Toast.makeText(requireContext(), R.string.playlist_editor_dialog_action_delete_toast, Toast.LENGTH_SHORT).show());
+
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).setOnLongClickListener(v -> {
             playlistEditorViewModel.deletePlaylist();
             dialogDismiss();
+            return false;
         });
 
         bind.playlistShareButton.setOnClickListener(view -> {

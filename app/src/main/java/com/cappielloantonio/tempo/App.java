@@ -4,8 +4,10 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 
+import com.cappielloantonio.tempo.github.Github;
 import com.cappielloantonio.tempo.helper.ThemeHelper;
 import com.cappielloantonio.tempo.subsonic.Subsonic;
 import com.cappielloantonio.tempo.subsonic.SubsonicPreferences;
@@ -15,6 +17,7 @@ public class App extends Application {
     private static App instance;
     private static Context context;
     private static Subsonic subsonic;
+    private static Github github;
     private static SharedPreferences preferences;
 
     @Override
@@ -53,6 +56,13 @@ public class App extends Application {
         return subsonic;
     }
 
+    public static Github getGithubClientInstance() {
+        if (github == null) {
+            github = new Github();
+        }
+        return github;
+    }
+
     public SharedPreferences getPreferences() {
         if (preferences == null) {
             preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -61,18 +71,12 @@ public class App extends Application {
         return preferences;
     }
 
-    private static Subsonic getSubsonicClient() {
-        String server = Preferences.getServer();
-        String username = Preferences.getUser();
-        String password = Preferences.getPassword();
-        String token = Preferences.getToken();
-        String salt = Preferences.getSalt();
-        boolean isLowSecurity = Preferences.isLowScurity();
+    public static void refreshSubsonicClient() {
+        subsonic = getSubsonicClient();
+    }
 
-        SubsonicPreferences preferences = new SubsonicPreferences();
-        preferences.setServerUrl(server);
-        preferences.setUsername(username);
-        preferences.setAuthentication(password, token, salt, isLowSecurity);
+    private static Subsonic getSubsonicClient() {
+        SubsonicPreferences preferences = getSubsonicPreferences();
 
         if (preferences.getAuthentication() != null) {
             if (preferences.getAuthentication().getPassword() != null)
@@ -84,5 +88,22 @@ public class App extends Application {
         }
 
         return new Subsonic(preferences);
+    }
+
+    @NonNull
+    private static SubsonicPreferences getSubsonicPreferences() {
+        String server = Preferences.getInUseServerAddress();
+        String username = Preferences.getUser();
+        String password = Preferences.getPassword();
+        String token = Preferences.getToken();
+        String salt = Preferences.getSalt();
+        boolean isLowSecurity = Preferences.isLowScurity();
+
+        SubsonicPreferences preferences = new SubsonicPreferences();
+        preferences.setServerUrl(server);
+        preferences.setUsername(username);
+        preferences.setAuthentication(password, token, salt, isLowSecurity);
+
+        return preferences;
     }
 }

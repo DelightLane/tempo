@@ -1,6 +1,11 @@
 package com.cappielloantonio.tempo.util
 
+import android.util.Log
 import com.cappielloantonio.tempo.App
+import com.cappielloantonio.tempo.model.HomeSector
+import com.cappielloantonio.tempo.subsonic.models.OpenSubsonicExtension
+import com.google.gson.Gson
+
 
 object Preferences {
     const val THEME = "theme"
@@ -12,9 +17,15 @@ object Preferences {
     private const val LOW_SECURITY = "low_security"
     private const val BATTERY_OPTIMIZATION = "battery_optimization"
     private const val SERVER_ID = "server_id"
+    private const val OPEN_SUBSONIC = "open_subsonic"
+    private const val OPEN_SUBSONIC_EXTENSIONS = "open_subsonic_extensions"
+    private const val LOCAL_ADDRESS = "local_address"
+    private const val IN_USE_SERVER_ADDRESS = "in_use_server_address"
+    private const val NEXT_SERVER_SWITCH = "next_server_switch"
     private const val PLAYBACK_SPEED = "playback_speed"
     private const val SKIP_SILENCE = "skip_silence"
     private const val IMAGE_CACHE_SIZE = "image_cache_size"
+    private const val STREAMING_CACHE_SIZE = "streaming_cache_size"
     private const val IMAGE_SIZE = "image_size"
     private const val MAX_BITRATE_WIFI = "max_bitrate_wifi"
     private const val MAX_BITRATE_MOBILE = "max_bitrate_mobile"
@@ -33,6 +44,7 @@ object Preferences {
     private const val MUSIC_DIRECTORY_SECTION_VISIBILITY = "music_directory_section_visibility"
     private const val REPLAY_GAIN_MODE = "replay_gain_mode"
     private const val AUDIO_TRANSCODE_PRIORITY = "audio_transcode_priority"
+    private const val STREAMING_CACHE_STORAGE = "streaming_cache_storage"
     private const val DOWNLOAD_STORAGE = "download_storage"
     private const val DEFAULT_DOWNLOAD_VIEW_TYPE = "default_download_view_type"
     private const val AUDIO_TRANSCODE_DOWNLOAD = "audio_transcode_download"
@@ -45,10 +57,18 @@ object Preferences {
     private const val BUFFERING_STRATEGY = "buffering_strategy"
     private const val SKIP_MIN_STAR_RATING = "skip_min_star_rating"
     private const val MIN_STAR_RATING = "min_star_rating"
+    private const val ALWAYS_ON_DISPLAY = "always_on_display"
+    private const val AUDIO_QUALITY_PER_ITEM = "audio_quality_per_item"
+    private const val HOME_SECTOR_LIST = "home_sector_list"
+    private const val RATING_PER_ITEM = "rating_per_item"
+    private const val NEXT_UPDATE_CHECK = "next_update_check"
+    private const val CONTINUOUS_PLAY = "continuous_play"
+    private const val LAST_INSTANT_MIX = "last_instant_mix"
 
 
     @JvmStatic
     fun getServer(): String? {
+        Log.d("Preferences++", "getServer()")
         return App.getInstance().preferences.getString(SERVER, null)
     }
 
@@ -118,6 +138,64 @@ object Preferences {
     }
 
     @JvmStatic
+    fun isOpenSubsonic(): Boolean {
+        return App.getInstance().preferences.getBoolean(OPEN_SUBSONIC, false)
+    }
+
+    @JvmStatic
+    fun setOpenSubsonic(isOpenSubsonic: Boolean) {
+        App.getInstance().preferences.edit().putBoolean(OPEN_SUBSONIC, isOpenSubsonic).apply()
+    }
+
+    @JvmStatic
+    fun getOpenSubsonicExtensions(): String? {
+        return App.getInstance().preferences.getString(OPEN_SUBSONIC_EXTENSIONS, null)
+    }
+
+    @JvmStatic
+    fun setOpenSubsonicExtensions(extension: List<OpenSubsonicExtension>) {
+        App.getInstance().preferences.edit().putString(OPEN_SUBSONIC_EXTENSIONS, Gson().toJson(extension)).apply()
+    }
+
+    @JvmStatic
+    fun getLocalAddress(): String? {
+        return App.getInstance().preferences.getString(LOCAL_ADDRESS, null)
+    }
+
+    @JvmStatic
+    fun setLocalAddress(address: String?) {
+        App.getInstance().preferences.edit().putString(LOCAL_ADDRESS, address).apply()
+    }
+
+    @JvmStatic
+    fun getInUseServerAddress(): String? {
+        return App.getInstance().preferences.getString(IN_USE_SERVER_ADDRESS, getServer())
+    }
+
+    @JvmStatic
+    fun isInUseServerAddressLocal(): Boolean {
+        return getInUseServerAddress() == getLocalAddress()
+    }
+
+    @JvmStatic
+    fun switchInUseServerAddress() {
+        val inUseAddress = if (getInUseServerAddress() == getServer()) getLocalAddress() else getServer()
+        App.getInstance().preferences.edit().putString(IN_USE_SERVER_ADDRESS, inUseAddress).apply()
+    }
+
+    @JvmStatic
+    fun isServerSwitchable(): Boolean {
+        return App.getInstance().preferences.getLong(
+                NEXT_SERVER_SWITCH, 0
+        ) + 15000 < System.currentTimeMillis()
+    }
+
+    @JvmStatic
+    fun setServerSwitchableTimer() {
+        App.getInstance().preferences.edit().putLong(NEXT_SERVER_SWITCH, System.currentTimeMillis()).apply()
+    }
+
+    @JvmStatic
     fun askForOptimization(): Boolean {
         return App.getInstance().preferences.getBoolean(BATTERY_OPTIMIZATION, true)
     }
@@ -158,6 +236,11 @@ object Preferences {
     }
 
     @JvmStatic
+    fun getStreamingCacheSize(): Long {
+        return App.getInstance().preferences.getString(STREAMING_CACHE_SIZE, "256")!!.toLong()
+    }
+
+    @JvmStatic
     fun getMaxBitrateWifi(): String {
         return App.getInstance().preferences.getString(MAX_BITRATE_WIFI, "0")!!
     }
@@ -190,7 +273,7 @@ object Preferences {
     @JvmStatic
     fun setDataSavingMode(isDataSavingModeEnabled: Boolean) {
         App.getInstance().preferences.edit().putBoolean(DATA_SAVING_MODE, isDataSavingModeEnabled)
-            .apply()
+                .apply()
     }
 
     @JvmStatic
@@ -201,20 +284,20 @@ object Preferences {
     @JvmStatic
     fun setStarredSyncEnabled(isStarredSyncEnabled: Boolean) {
         App.getInstance().preferences.edit().putBoolean(
-            SYNC_STARRED_TRACKS_FOR_OFFLINE_USE, isStarredSyncEnabled
+                SYNC_STARRED_TRACKS_FOR_OFFLINE_USE, isStarredSyncEnabled
         ).apply()
     }
 
     @JvmStatic
     fun showServerUnreachableDialog(): Boolean {
         return App.getInstance().preferences.getLong(
-            SERVER_UNREACHABLE, 0
-        ) + 360000 < System.currentTimeMillis()
+                SERVER_UNREACHABLE, 0
+        ) + 86400000 < System.currentTimeMillis()
     }
 
     @JvmStatic
-    fun setServerUnreachableDatetime(datetime: Long) {
-        App.getInstance().preferences.edit().putLong(SERVER_UNREACHABLE, datetime).apply()
+    fun setServerUnreachableDatetime() {
+        App.getInstance().preferences.edit().putLong(SERVER_UNREACHABLE, System.currentTimeMillis()).apply()
     }
 
     @JvmStatic
@@ -273,6 +356,19 @@ object Preferences {
     }
 
     @JvmStatic
+    fun getStreamingCacheStoragePreference(): Int {
+        return App.getInstance().preferences.getString(STREAMING_CACHE_STORAGE, "0")!!.toInt()
+    }
+
+    @JvmStatic
+    fun setStreamingCacheStoragePreference(streamingCachePreference: Int) {
+        return App.getInstance().preferences.edit().putString(
+                STREAMING_CACHE_STORAGE,
+                streamingCachePreference.toString()
+        ).apply()
+    }
+
+    @JvmStatic
     fun getDownloadStoragePreference(): Int {
         return App.getInstance().preferences.getString(DOWNLOAD_STORAGE, "0")!!.toInt()
     }
@@ -280,24 +376,24 @@ object Preferences {
     @JvmStatic
     fun setDownloadStoragePreference(storagePreference: Int) {
         return App.getInstance().preferences.edit().putString(
-            DOWNLOAD_STORAGE,
-            storagePreference.toString()
+                DOWNLOAD_STORAGE,
+                storagePreference.toString()
         ).apply()
     }
 
     @JvmStatic
     fun getDefaultDownloadViewType(): String {
         return App.getInstance().preferences.getString(
-            DEFAULT_DOWNLOAD_VIEW_TYPE,
-            Constants.DOWNLOAD_TYPE_TRACK
+                DEFAULT_DOWNLOAD_VIEW_TYPE,
+                Constants.DOWNLOAD_TYPE_TRACK
         )!!
     }
 
     @JvmStatic
     fun setDefaultDownloadViewType(viewType: String) {
         return App.getInstance().preferences.edit().putString(
-            DEFAULT_DOWNLOAD_VIEW_TYPE,
-            viewType
+                DEFAULT_DOWNLOAD_VIEW_TYPE,
+                viewType
         ).apply()
     }
 
@@ -344,5 +440,59 @@ object Preferences {
     @JvmStatic
     fun getMinStarRatingAccepted(): Int {
         return App.getInstance().preferences.getInt(MIN_STAR_RATING, 0)
+    }
+
+    @JvmStatic
+    fun isDisplayAlwaysOn(): Boolean {
+        return App.getInstance().preferences.getBoolean(ALWAYS_ON_DISPLAY, false)
+    }
+
+    @JvmStatic
+    fun showAudioQuality(): Boolean {
+        return App.getInstance().preferences.getBoolean(AUDIO_QUALITY_PER_ITEM, false)
+    }
+
+    @JvmStatic
+    fun getHomeSectorList(): String? {
+        return App.getInstance().preferences.getString(HOME_SECTOR_LIST, null)
+    }
+
+    @JvmStatic
+    fun setHomeSectorList(extension: List<HomeSector>?) {
+        App.getInstance().preferences.edit().putString(HOME_SECTOR_LIST, Gson().toJson(extension)).apply()
+    }
+
+    @JvmStatic
+    fun showItemRating(): Boolean {
+        return App.getInstance().preferences.getBoolean(RATING_PER_ITEM, false)
+    }
+
+    @JvmStatic
+    fun showTempoUpdateDialog(): Boolean {
+        return App.getInstance().preferences.getLong(
+                NEXT_UPDATE_CHECK, 0
+        ) + 86400000 < System.currentTimeMillis()
+    }
+
+    @JvmStatic
+    fun setTempoUpdateReminder() {
+        App.getInstance().preferences.edit().putLong(NEXT_UPDATE_CHECK, System.currentTimeMillis()).apply()
+    }
+
+    @JvmStatic
+    fun isContinuousPlayEnabled(): Boolean {
+        return App.getInstance().preferences.getBoolean(CONTINUOUS_PLAY, true)
+    }
+
+    @JvmStatic
+    fun setLastInstantMix() {
+        App.getInstance().preferences.edit().putLong(LAST_INSTANT_MIX, System.currentTimeMillis()).apply()
+    }
+
+    @JvmStatic
+    fun isInstantMixUsable(): Boolean {
+        return App.getInstance().preferences.getLong(
+                LAST_INSTANT_MIX, 0
+        ) + 5000 < System.currentTimeMillis()
     }
 }

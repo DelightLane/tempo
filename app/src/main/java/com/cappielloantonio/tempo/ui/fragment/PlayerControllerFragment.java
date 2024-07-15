@@ -163,8 +163,8 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void setMetadata(MediaMetadata mediaMetadata) {
-        playerMediaTitleLabel.setText(MusicUtil.getReadableString(String.valueOf(mediaMetadata.title)));
-        playerArtistNameLabel.setText(MusicUtil.getReadableString(String.valueOf(mediaMetadata.artist)));
+        playerMediaTitleLabel.setText(String.valueOf(mediaMetadata.title));
+        playerArtistNameLabel.setText(String.valueOf(mediaMetadata.artist));
 
         playerMediaTitleLabel.setSelected(true);
         playerArtistNameLabel.setSelected(true);
@@ -257,10 +257,20 @@ public class PlayerControllerFragment extends Fragment {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
 
+                PlayerBottomSheetFragment playerBottomSheetFragment = (PlayerBottomSheetFragment) requireActivity().getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet");
+
                 if (position == 0) {
                     activity.setBottomSheetDraggableState(true);
+
+                    if (playerBottomSheetFragment != null) {
+                        playerBottomSheetFragment.setPlayerControllerVerticalPagerDraggableState(true);
+                    }
                 } else if (position == 1) {
                     activity.setBottomSheetDraggableState(false);
+
+                    if (playerBottomSheetFragment != null) {
+                        playerBottomSheetFragment.setPlayerControllerVerticalPagerDraggableState(false);
+                    }
                 }
             }
         });

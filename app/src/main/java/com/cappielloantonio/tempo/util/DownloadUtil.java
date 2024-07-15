@@ -8,10 +8,13 @@ import androidx.media3.common.util.UnstableApi;
 import androidx.media3.database.DatabaseProvider;
 import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.datasource.ResolvingDataSource;
 import androidx.media3.datasource.cache.Cache;
 import androidx.media3.datasource.cache.CacheDataSource;
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.NoOpCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
@@ -35,13 +38,16 @@ public final class DownloadUtil {
     public static final String DOWNLOAD_NOTIFICATION_SUCCESSFUL_GROUP = "com.cappielloantonio.tempo.SuccessfulDownload";
     public static final String DOWNLOAD_NOTIFICATION_FAILED_GROUP = "com.cappielloantonio.tempo.FailedDownload";
 
+    private static final String STREAMING_CACHE_CONTENT_DIRECTORY = "streaming_cache";
     private static final String DOWNLOAD_CONTENT_DIRECTORY = "downloads";
 
     private static DataSource.Factory dataSourceFactory;
     private static DataSource.Factory httpDataSourceFactory;
     private static DatabaseProvider databaseProvider;
+    private static File streamingCacheDirectory;
     private static File downloadDirectory;
     private static Cache downloadCache;
+    private static SimpleCache streamingCache;
     private static DownloadManager downloadManager;
     private static DownloaderManager downloaderManager;
     private static DownloadNotificationHelper downloadNotificationHelper;
@@ -65,7 +71,9 @@ public final class DownloadUtil {
             CookieManager cookieManager = new CookieManager();
             cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER);
             CookieHandler.setDefault(cookieManager);
-            httpDataSourceFactory = new DefaultHttpDataSource.Factory();
+            httpDataSourceFactory = new DefaultHttpDataSource
+                    .Factory()
+                    .setAllowCrossProtocolRedirects(true);
         }
 
         return httpDataSourceFactory;
@@ -74,8 +82,27 @@ public final class DownloadUtil {
     public static synchronized DataSource.Factory getDataSourceFactory(Context context) {
         if (dataSourceFactory == null) {
             context = context.getApplicationContext();
+
             DefaultDataSource.Factory upstreamFactory = new DefaultDataSource.Factory(context, getHttpDataSourceFactory());
-            dataSourceFactory = buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache(context));
+
+            if (Preferences.getStreamingCacheSize() > 0) {
+                CacheDataSource.Factory streamCacheFactory = new CacheDataSource.Factory()
+                        .setCache(getStreamingCache(context))
+                        .setUpstreamDataSourceFactory(upstreamFactory);
+
+                ResolvingDataSource.Factory resolvingFactory = new ResolvingDataSource.Factory(
+                        new StreamingCacheDataSource.Factory(streamCacheFactory),
+                        dataSpec -> {
+                            DataSpec.Builder builder = dataSpec.buildUpon();
+                            builder.setFlags(dataSpec.flags & ~DataSpec.FLAG_DONT_CACHE_IF_LENGTH_UNKNOWN);
+                            return builder.build();
+                        }
+                );
+
+                dataSourceFactory = buildReadOnlyCacheDataSource(resolvingFactory, getDownloadCache(context));
+            } else {
+                dataSourceFactory = buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache(context));
+            }
         }
 
         return dataSourceFactory;
@@ -108,6 +135,20 @@ public final class DownloadUtil {
         return downloadCache;
     }
 
+    private static synchronized SimpleCache getStreamingCache(Context context) {
+        if (streamingCache == null) {
+            File streamingCacheDirectory = new File(getStreamingCacheDirectory(context), STREAMING_CACHE_CONTENT_DIRECTORY);
+
+            streamingCache = new SimpleCache(
+                    streamingCacheDirectory,
+                    new LeastRecentlyUsedCacheEvictor(Preferences.getStreamingCacheSize() * 1024 * 1024),
+                    getDatabaseProvider(context)
+            );
+        }
+
+        return streamingCache;
+    }
+
     private static synchronized void ensureDownloadManagerInitialized(Context context) {
         if (downloadManager == null) {
             downloadManager = new DownloadManager(
@@ -128,6 +169,27 @@ public final class DownloadUtil {
         }
 
         return databaseProvider;
+    }
+
+    private static synchronized File getStreamingCacheDirectory(Context context) {
+        if (streamingCacheDirectory == null) {
+            if (Preferences.getStreamingCacheStoragePreference() == 0) {
+                streamingCacheDirectory = context.getExternalFilesDirs(null)[0];
+                if (streamingCacheDirectory == null) {
+                    streamingCacheDirectory = context.getFilesDir();
+                }
+            } else {
+                try {
+                    streamingCacheDirectory = context.getExternalFilesDirs(null)[1];
+                } catch (Exception exception) {
+                    streamingCacheDirectory = context.getExternalFilesDirs(null)[0];
+                    Preferences.setStreamingCacheStoragePreference(0);
+                }
+
+            }
+        }
+
+        return streamingCacheDirectory;
     }
 
     private static synchronized File getDownloadDirectory(Context context) {
@@ -185,6 +247,10 @@ public final class DownloadUtil {
         }
 
         return files;
+    }
+
+    public static synchronized long getStreamingCacheSize(Context context) {
+        return getStreamingCache(context).getCacheSpace();
     }
 
     public static Notification buildGroupSummaryNotification(Context context, String channelId, String groupId, int icon, String title) {
