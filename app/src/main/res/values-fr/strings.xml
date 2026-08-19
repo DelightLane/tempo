@@ -149,6 +149,7 @@
     <string name="menu_sort_artist">Artiste</string>
     <string name="menu_sort_name">Nom</string>
     <string name="menu_sort_random">Aléatoire</string>
+    <string name="menu_sort_modified">Date de modification</string>
     <string name="menu_sort_year">Année</string>
     <string name="player_playback_speed">%1$.2fx</string>
     <string name="player_queue_clean_all_button">Vider la file d\'attente</string>

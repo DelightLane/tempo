@@ -144,6 +144,9 @@ public class PlaylistHorizontalAdapter extends RecyclerView.Adapter<PlaylistHori
             case Constants.PLAYLIST_ORDER_BY_RANDOM:
                 Collections.shuffle(playlists);
                 break;
+            case Constants.PLAYLIST_ORDER_BY_CHANGED:
+                playlists.sort(Comparator.comparing(Playlist::getChanged, Comparator.nullsLast(Comparator.reverseOrder())));
+                break;
         }
 
         notifyDataSetChanged();

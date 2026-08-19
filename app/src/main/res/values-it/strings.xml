@@ -175,6 +175,7 @@
 	<string name="menu_sort_artist">Artista</string>
 	<string name="menu_sort_name">Nome</string>
 	<string name="menu_sort_random">Casuale</string>
+	<string name="menu_sort_modified">Data di modifica</string>
 	<string name="menu_sort_recently_added">Aggiunti di recente</string>
 	<string name="menu_pin_button">Aggiungi alla schermata home</string>
 	<string name="menu_unpin_button">Rimuovi dalla schermata home</string>

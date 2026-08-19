@@ -151,6 +151,7 @@
     <string name="menu_sort_artist">아티스트</string>
     <string name="menu_sort_name">이름</string>
     <string name="menu_sort_random">랜덤</string>
+    <string name="menu_sort_modified">수정 날짜</string>
     <string name="menu_sort_year">년도</string>
     <string name="player_playback_speed">%1$.2fx</string>
     <string name="player_queue_clean_all_button">재생목록 비우기</string>

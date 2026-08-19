@@ -173,6 +173,7 @@
     <string name="menu_sort_artist">Künstler</string>
     <string name="menu_sort_name">Name</string>
     <string name="menu_sort_random">Zufall</string>
+    <string name="menu_sort_modified">Änderungsdatum</string>
     <string name="menu_sort_recently_added">Vor kurzem hinzugefügt</string>
     <string name="menu_pin_button">Zur Startseite hinzufügen</string>
     <string name="menu_unpin_button">Von Startseite entfernen</string>

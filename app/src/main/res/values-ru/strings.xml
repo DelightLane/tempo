@@ -169,6 +169,7 @@
     <string name="menu_sort_artist">Исполнитель</string>
     <string name="menu_sort_name">Имя</string>
     <string name="menu_sort_random">Случайный</string>
+    <string name="menu_sort_modified">Дата изменения</string>
     <string name="menu_sort_recently_added">Недавно добавленный</string>
     <string name="menu_sort_recently_played">Недавно воспроизведенный</string>
     <string name="menu_sort_most_played">Самое популярное</string>
