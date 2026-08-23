@@ -8,7 +8,9 @@ import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.SessionAvailabilityListener
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
@@ -164,6 +166,18 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
                     if (newPosition.mediaItem?.mediaMetadata?.extras?.getString("type") == Constants.MEDIA_TYPE_MUSIC) {
                         MediaManager.setLastPlayedTimestamp(newPosition.mediaItem)
                     }
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                Log.e("MediaService", "Playback failed for ${player.currentMediaItem?.mediaMetadata?.title}: ${error.errorCodeName}", error)
+
+                if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                    player.prepare()
+                    player.play()
+                } else {
+                    player.stop()
                 }
             }
         })
